@@ -19,7 +19,7 @@ open import Data.Product
 
 open import Relation.Nullary
 open import Function
-  using (_$_)
+  using (_$_ ; _∘_)
 
 
 open import Parity
@@ -35,12 +35,27 @@ Bits n = Vec Bit n
 Byte : Set
 Byte = Bits 8
 
-Datagrams : Set
-Datagrams = List Byte
+bits-0 : ∀ {n} → Bits n
+bits-0 {n} = tabulate (λ _ → false)
 
 Bit-toℕ : Bit → ℕ
 Bit-toℕ true = 1
 Bit-toℕ false = 0
+
+bin-placevals : ∀ n → Vec ℕ n
+bin-placevals n = reverse $ map (pow₂ ∘ Fin-toℕ) (allFin n)
+
+Bits-toℕ : ∀ {n} → Bits n → ℕ
+Bits-toℕ [] = 0
+Bits-toℕ (b ∷ bits) = foldr₁ _+_ $ 
+  zipWith _*_ (bin-placevals _)
+              (map Bit-toℕ (b ∷ bits))
+
+Bits-fromℕ : ℕ → Σ[ n ∈ ℕ ] Bits n
+-- defined lower down with BitView
+
+Byte-toℕ : Byte → ℕ
+Byte-toℕ byte = Bits-toℕ byte
 
 -- bit operatons for bytes
 Op₁ : Set
@@ -48,6 +63,10 @@ Op₁ = Byte → Byte
 
 Op₂ : Set
 Op₂ = Byte → Byte → Byte
+
+Op : ℕ → Set
+Op zero = Bit
+Op (suc n) = Bit → Op n
 
 ~_ : Op₁
 ~ b = map not b
@@ -74,6 +93,12 @@ bit₁ +₂ bit₂ carry r =
 _+₂_ : Bit → Bit → (Bit × Bit)
 bit₁ +₂ bit₂ = bit₁ +₂ bit₂ carry false
 
+mux₂ : Op 3
+mux₂ true  b₀ b₁ = b₁
+mux₂ false b₀ b₁ = b₀
+
+bit-fits : ℕ → Set
+bit-fits n = {!!}
 
 {-
   The workhorse here is foldMe, which takes the bits
@@ -101,6 +126,7 @@ private
     b2 = true ∷ false ∷ true ∷ false ∷ true ∷ false ∷ true ∷ [ true ]
 
 open import Relation.Binary.PropositionalEquality
+  hiding ([_])
 
 
 -- conversion functions
@@ -133,11 +159,21 @@ bitView (suc n) with bitView n
 ...     | l , bvn with suc₂ bvn 
 ...     | b , sbvn = (if b then suc l else l) , sbvn
 
+Bits-fromBitView : ∀ {n l} → BitView n l → Bits l
+Bits-fromBitView ₂#0 = [ false ]
+Bits-fromBitView ₂#1 = [ true  ]
+Bits-fromBitView (bv #0) = Bits-fromBitView bv ∷ʳ false
+Bits-fromBitView (bv #1) = Bits-fromBitView bv ∷ʳ true
+
+Bits-fromℕ n with bitView n
+...      | l , bv = l , Bits-fromBitView bv
+
 -- experimenting with ring solver
 private
   lem₁ : (x : ℕ) → x * 2 ≡ x + 1 * x
   lem₁ = (solve 1 (λ x' → x' :* con 2 := x' :+ con 1 :* x') refl)
 
+-- 1 followed by l zeros
 lshift¹ : (l : ℕ) → BitView (pow₂ l) (suc l)
 lshift¹ 0 = ₂#1
 lshift¹ (suc l) rewrite sym $ lem₁ $ pow₂ l = lshift¹ l #0
