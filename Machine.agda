@@ -21,8 +21,8 @@ open import Relation.Nullary
 open import Function
   using (_$_ ; _∘_)
 
-
 open import Parity
+open import BitView
 
 module Machine where
 
@@ -38,47 +38,109 @@ Byte = Bits 8
 bits-0 : ∀ {n} → Bits n
 bits-0 {n} = tabulate (λ _ → false)
 
+bits-tabulate : ∀ n → Vec (Bits n) (pow₂ n)
+bits-tabulate zero = [ [] ]
+bits-tabulate (suc n) with bits-tabulate n
+...         | tab = (_∷_ false) ∷ [ _∷_ true ] ⊛* tab
+
+-- conversion functions
+
 Bit-toℕ : Bit → ℕ
-Bit-toℕ true = 1
+Bit-toℕ true  = 1
 Bit-toℕ false = 0
+
+Bit-toBitView : (x : Bit) → BitView (Bit-toℕ x) 1
+Bit-toBitView true  = ₂#1
+Bit-toBitView false = ₂#0
 
 bin-placevals : ∀ n → Vec ℕ n
 bin-placevals n = reverse $ map (pow₂ ∘ Fin-toℕ) (allFin n)
 
-Bits-toℕ : ∀ {n} → Bits n → ℕ
-Bits-toℕ [] = 0
-Bits-toℕ (b ∷ bits) = foldr₁ _+_ $ 
+-- the 'J' way to compute the value
+-- +/ (|. 2 ^ i. n) * bits
+Bits-toℕ' : ∀ {n} → Bits n → ℕ
+Bits-toℕ' [] = 0
+Bits-toℕ' (b ∷ bits) = foldr₁ _+_ $ 
   zipWith _*_ (bin-placevals _)
               (map Bit-toℕ (b ∷ bits))
 
+-- the 'Agda' way to compute the value
+Bits-toBitView : ∀ {l} → (bits : Bits (suc l)) → Σ[ n ∈ ℕ ] BitView n (suc l)
+Bits-toBitView (x ∷ []) = _ , Bit-toBitView x
+Bits-toBitView (x ∷ x₁ ∷ bits) = _ , proj₂ (Bit-toBitView x #ˡ proj₂ (Bits-toBitView $ x₁ ∷ bits))
+
+Bits-toℕ : ∀ {n} → Bits n → ℕ
+Bits-toℕ [] = 0
+Bits-toℕ (x ∷ bits) = proj₁ $ Bits-toBitView (x ∷ bits)
+
+Bits-fromBitView : ∀ {n l} → BitView n l → Bits l
+Bits-fromBitView ₂#0 = [ false ]
+Bits-fromBitView ₂#1 = [ true  ]
+Bits-fromBitView (bv #0) = Bits-fromBitView bv ∷ʳ false
+Bits-fromBitView (bv #1) = Bits-fromBitView bv ∷ʳ true
+
 Bits-fromℕ : ℕ → Σ[ n ∈ ℕ ] Bits n
--- defined lower down with BitView
+Bits-fromℕ n with bitView n
+...      | l , bv = l , Bits-fromBitView bv
 
 Byte-toℕ : Byte → ℕ
-Byte-toℕ byte = Bits-toℕ byte
+Byte-toℕ byte = Bits-toℕ' byte
 
--- bit operatons for bytes
-Op₁ : Set
-Op₁ = Byte → Byte
+-- fit two sets of bits to the same size (glb)
 
-Op₂ : Set
-Op₂ = Byte → Byte → Byte
+Bits-⊓ : ∀ {n m} → Bits n → Bits m → (Bits (n ⊓ m) × Bits (n ⊓ m))
+Bits-⊓ [] [] = [] , []
+Bits-⊓ [] (x ∷ b2) = [] , []
+Bits-⊓ (x ∷ b1) [] = [] , []
+Bits-⊓ (x ∷ b1) (x₁ ∷ b2) with Bits-⊓ b1 b2
+...  | b1⊓ , b2⊓ = (x ∷ b1⊓) , x₁ ∷ b2⊓
 
-Op : ℕ → Set
-Op zero = Bit
-Op (suc n) = Bit → Op n
+-- bit operations for bytes
 
-~_ : Op₁
+BitOp : ℕ → Set
+BitOp zero = Bit
+BitOp (suc n) = Bit → BitOp n
+
+BitsOp : ℕ → Set
+BitsOp n = ∀ {l} → helper l n
+  where
+    helper : ℕ → ℕ → Set
+    helper l 0 = Bits l
+    helper l (suc n) = Bits l → helper l n
+
+~_ : BitsOp 1
 ~ b = map not b
 
-_&_ : Op₂
+_&_ : BitsOp 2
 b1 & b2 = zipWith _∧_ b1 b2
 
-_∣_ : Op₂
+_∣_ : BitsOp 2
 b1 ∣ b2 = zipWith _∨_ b1 b2
 
-_^_ : Op₂
-b1 ^ b2 = zipWith _xor_ b2 b2
+_^_ : BitsOp 2
+b1 ^ b2 = zipWith _xor_ b1 b2
+
+-- bits equality
+eq-0 : ∀ {n} → Bits n → Bit
+eq-0 bits = not (foldr₁ _∨_ $ false ∷ bits)
+
+-- more complex operations
+
+_==_ : ∀ {n} → Bits n → Bits n → Bit
+b1 == b2 = eq-0 (~ (b1 ^ (~ b2)))
+
+-- mux
+mux₂ : BitOp 3
+mux₂ bₘ b₀ b₁ = (not bₘ ∧ b₀) ∨ (bₘ ∧ b₁)
+-- mux₂ true  b₀ b₁ = b₁
+-- mux₂ false b₀ b₁ = b₀
+
+muxₙ : ∀ {m n} → Bits (suc m) → Bits (suc n) → Bit
+muxₙ {m = mux-len} mux bits = 
+  let all-mux = bits-tabulate (suc mux-len)    -- tabulate all possible mux configurations
+      sel-mux = map (_==_ mux) all-mux         -- find the given mux configuration
+      (bits⊓ , sel-mux⊓) = Bits-⊓ bits sel-mux -- fit input to common size
+  in not (eq-0 $ bits⊓ & sel-mux⊓)
 
 -- addition
 _+₂ʰ_ : Bit → Bit → (Bit × Bit)
@@ -93,12 +155,8 @@ bit₁ +₂ bit₂ carry r =
 _+₂_ : Bit → Bit → (Bit × Bit)
 bit₁ +₂ bit₂ = bit₁ +₂ bit₂ carry false
 
-mux₂ : Op 3
-mux₂ true  b₀ b₁ = b₁
-mux₂ false b₀ b₁ = b₀
-
-bit-fits : ℕ → Set
-bit-fits n = {!!}
+_-₂_ : Bit → Bit → (Bit × Bit)
+bit₁ -₂ bit₂ = bit₁ +₂ bit₂ carry true
 
 {-
   The workhorse here is foldMe, which takes the bits
@@ -109,13 +167,22 @@ the new carry.
   Overflow is discarded
 -}
 
-_+₈_ : Byte → Byte → Byte
-b₁ +₈ b₂ = proj₁ (foldr (λ n → (Bits n) × Bit) foldMe ([] , false) (zip b₁ b₂))
+_+ₙ_carry_ : ∀ {n} → Bits n → Bits n → Bit → Bits n
+b₁ +ₙ b₂ carry c = proj₁ (foldr (λ n → (Bits n) × Bit) foldMe ([] , c) (zip b₁ b₂))
   where
     foldMe : ∀ {n} →  Bit × Bit → (Bits n) × Bit → (Bits (suc n) × Bit)
     foldMe (bit₁ , bit₂) (bits , c) = 
       let (c' , sum) = bit₁ +₂ bit₂ carry c
       in (sum ∷ bits , c')
+
+_+ₙ_ : BitsOp 2
+b₁ +ₙ b₂ = b₁ +ₙ b₂ carry false
+
+_-ₙ_carry_ : ∀ {n} → Bits n → Bits n → Bit → Bits n
+b₁ -ₙ b₂ carry c = b₁ +ₙ ~ b₂ carry c
+
+_-ₙ_ : BitsOp 2
+b₁ -ₙ b₂ = b₁ -ₙ b₂ carry true
 
 private
   module _ where
@@ -128,45 +195,6 @@ private
 open import Relation.Binary.PropositionalEquality
   hiding ([_])
 
-
--- conversion functions
-
-infixl 100 _#1
-infixl 100 _#0
-
-data BitView : ℕ → ℕ → Set where
-  ₂#0 : BitView 0 1
-  ₂#1 : BitView 1 1
-  _#0 : ∀ {s l} → BitView s l → BitView (s * 2) (suc l)
-  _#1 : ∀ {s l} → BitView s l → BitView (1 + s * 2) (suc l)
-
-private
-  mypf : BitView 65 8
-  mypf = ₂#0 #1 #0 #0 #0 #0 #0 #1
-
-suc₂ : ∀ {s l} → BitView s l →
-       Σ[ over ∈ Bool ] BitView (suc s) (if over then suc l else l)
-suc₂ ₂#0 = false , ₂#1
-suc₂ ₂#1 = true  , ₂#1 #0
-suc₂ (bv #0) = false , bv #1
-suc₂ (bv #1) with suc₂ bv 
-...  | true  , sbv = true  , sbv #0
-...  | false , sbv = false , sbv #0
-
-bitView : ∀ (n : ℕ) → Σ[ l ∈ ℕ ] BitView n l
-bitView 0 = 1 , ₂#0
-bitView (suc n) with bitView n
-...     | l , bvn with suc₂ bvn 
-...     | b , sbvn = (if b then suc l else l) , sbvn
-
-Bits-fromBitView : ∀ {n l} → BitView n l → Bits l
-Bits-fromBitView ₂#0 = [ false ]
-Bits-fromBitView ₂#1 = [ true  ]
-Bits-fromBitView (bv #0) = Bits-fromBitView bv ∷ʳ false
-Bits-fromBitView (bv #1) = Bits-fromBitView bv ∷ʳ true
-
-Bits-fromℕ n with bitView n
-...      | l , bv = l , Bits-fromBitView bv
 
 -- experimenting with ring solver
 private
