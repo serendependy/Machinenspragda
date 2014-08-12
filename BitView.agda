@@ -3,8 +3,9 @@ open import Data.Product
 open import Data.Bool
 
 open import Relation.Binary.PropositionalEquality
-open import Function
+open Relation.Binary.PropositionalEquality.≡-Reasoning
 
+open import Function
 open import Data.Nat.Properties.Simple
 
 open import Parity
@@ -50,34 +51,40 @@ from-BitView₁ (() #1)
 #0-#ˡ bv #0 = (#0-#ˡ bv) #0
 #0-#ˡ bv #1 = (#0-#ˡ bv) #1
 
+private
+  lem₁-#1 : (s l : ℕ) → (s + pow₂ l) * 2 ≡ s * 2 + (pow₂ l + (pow₂ l + 0))
+  lem₁-#1 s l =
+    begin 
+      (s + pow₂ l) * 2
+    ≡⟨ distribʳ-*-+ 2 s (pow₂ l) ⟩
+      s * 2 + pow₂ l * 2
+    ≡⟨ cong (λ x → s * 2 + x) (*-comm (pow₂ l) 2) ⟩
+      s * 2 + (pow₂ l + (pow₂ l + 0)) ∎
+
 -- can't wait for reflection tactics....
 #1-#ˡ_ : ∀ {n l} → BitView n l → BitView (n + pow₂ l) (suc l)
 #1-#ˡ ₂#0 = ₂#1 #0
 #1-#ˡ ₂#1 = ₂#1 #1
-#1-#ˡ bv #0 with #1-#ˡ bv
-... | bv' = {!bv' #0!}
-#1-#ˡ bv #1 with #1-#ˡ bv
-... | bv' = {!bv' #1!}
+#1-#ˡ bv #0            with #1-#ˡ bv
+#1-#ˡ (_#0 {s} {l} bv) | bv' rewrite sym $ lem₁-#1 s l = bv' #0
+#1-#ˡ bv #1            with #1-#ˡ bv
+#1-#ˡ (_#1 {s} {l} bv) | bv' rewrite sym $ lem₁-#1 s l = bv' #1
 
--- _#ˡ_ : ∀ {n n' l} → (bv₁ : BitView n' 1) → BitView n l → 
---                     BitView (n + from-BitView₁ bv₁ * pow₂ l) (suc l)
--- ₂#0 #ˡ ₂#0 = ₂#0 #0
--- ₂#0 #ˡ ₂#1 = ₂#0 #1
--- ₂#0 #ˡ bv #0 with BitView-val bv
--- ...    | val rewrite +-comm (val * 2) 0 = {!!}
--- ₂#0 #ˡ bv #1 = {!!}
--- ₂#1 #ˡ ₂#0 = ₂#1 #0
--- ₂#1 #ˡ ₂#1 = ₂#1 #1
--- ₂#1 #ˡ bv #0 = {!!}
--- ₂#1 #ˡ bv #1 = {!!}
--- () #0 #ˡ bv
--- () #1 #ˡ bv
+-- really appending MSB
+_#ˡ'_ : ∀ {n n' l} → (bv₁ : BitView n' 1) → BitView n l → 
+                    BitView (n + from-BitView₁ bv₁ * pow₂ l) (suc l)
+_#ˡ'_ {n = n} ₂#0 bv rewrite +-comm n        0 = #0-#ˡ bv
+_#ˡ'_ {l = l} ₂#1 bv rewrite +-comm (pow₂ l) 0 = #1-#ˡ bv
+() #0 #ˡ' bv
+() #1 #ˡ' bv
 
--- _#ˡ_ : ∀ {n' n l} → BitView n' 1 → BitView n l → Σ[ m ∈ ℕ ] BitView m (suc l)
--- b #ˡ ₂#0 = _ , b #0
--- b #ˡ ₂#1 = _ , b #1
--- b #ˡ bv #0 = _ , proj₂ (b #ˡ bv) #0
--- b #ˡ bv #1 = _ , proj₂ (b #ˡ bv) #1
+-- appending MSB the easy way
+_#ˡ_ : ∀ {n' n l} → BitView n' 1 → BitView n l → Σ[ m ∈ ℕ ] BitView m (suc l)
+b #ˡ ₂#0 = _ , b #0
+b #ˡ ₂#1 = _ , b #1
+b #ˡ bv #0 = _ , proj₂ (b #ˡ bv) #0
+b #ˡ bv #1 = _ , proj₂ (b #ˡ bv) #1
+
 
 -- adding one to a BitView
 suc₂ : ∀ {s l} → BitView s l →
