@@ -77,34 +77,54 @@ Byte-toℕ byte = Bits-toℕ' byte
 bit-adder-correct : ∀ {n} → (b₁ b₂ : Bits n) → 
                       (Bits-toℕ' b₁ + Bits-toℕ' b₂) ≡ Bits×Carry-toℕ' (b₁ +ₙ b₂)
 bit-adder-correct [] [] = refl
-bit-adder-correct (x ∷ b₁) (x₁ ∷ b₂) with bit-adder-correct b₁ b₂
-bit-adder-correct (true  ∷ b₁) (true  ∷ b₂) | prf = {!!}
-bit-adder-correct (true  ∷ b₁) (false ∷ b₂) | prf = {!!}
-bit-adder-correct (_∷_ {n} false b₁) (true  ∷ b₂) | prf with b₁ +ₙ b₂
-...             | bitsum , true  = 
-  let b₁' = Bits-toℕ' b₁
-      b₂' = Bits-toℕ' b₂
-      bitsum' = Bits-toℕ' bitsum
-      2ⁿ = pow₂ n
-  in begin b₁' + (pow₂ n + zero + b₂') 
-               ≡⟨ cong (_+_ b₁') (+-comm (pow₂ n + zero) b₂') ⟩ 
-           b₁' + (b₂' + (pow₂ n + zero)) 
-               ≡⟨ sym (+-assoc b₁' b₂' (pow₂ n + zero)) ⟩ 
-           b₁' + b₂' + (pow₂ n + zero)
-               ≡⟨ cong (λ x → x + (pow₂ n + zero)) prf ⟩
-           pow₂ n + zero + bitsum' + (pow₂ n + zero)
-               ≡⟨ +-assoc (pow₂ n + zero) bitsum'  (pow₂ n + zero) ⟩
-           pow₂ n + zero + (bitsum' + (pow₂ n + zero))
-               ≡⟨ +-assoc (pow₂ n) 0 (bitsum' + (pow₂ n + 0)) ⟩ 
-           pow₂ n + (bitsum' + (pow₂ n + 0))
-               ≡⟨ cong (λ x → pow₂ n + x) (+-comm bitsum' (pow₂ n + 0)) ⟩
-           pow₂ n + (pow₂ n + zero + bitsum')
-               ≡⟨ sym (+-assoc (pow₂ n) (pow₂ n + 0) bitsum') ⟩
-           pow₂ n + (pow₂ n + zero) + bitsum'
-               ≡⟨ cong (λ x → pow₂ n + x + bitsum') (sym (+-right-identity (pow₂ n + 0))) ⟩
-           pow₂ n + (pow₂ n + zero + zero) + bitsum'
-               ≡⟨ cong (λ x → x + bitsum') (sym (+-assoc (pow₂ n) (pow₂ n + 0) 0)) ⟩
-           (pow₂ n + (pow₂ n + zero) + zero + bitsum' ∎)
-...             | bitsum , false = {!!}
-bit-adder-correct (false ∷ b₁) (false ∷ b₂) | prf = prf
+bit-adder-correct (_∷_ {n} x₁ b₁) (_∷_ .{n} x₂ b₂)
+  rewrite +-right-identity (pow₂ n)
+  with Bits-toℕ' b₁ | Bits-toℕ' b₂ | pow₂ n | (b₁ +ₙ b₂) | bit-adder-correct b₁ b₂
+... | b₁' | b₂' | 2ⁿ | bₛ , c | prf with Bits-toℕ' bₛ 
+bit-adder-correct (true ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ' 
+  rewrite +-right-identity 2ⁿ | +-right-identity (2ⁿ + 2ⁿ) = 
+   begin 2ⁿ + b₁' + (2ⁿ + b₂')       ≡⟨ +-assoc 2ⁿ b₁' (2ⁿ + b₂') ⟩
+         2ⁿ + (b₁' + (2ⁿ + b₂'))     ≡⟨ cong (λ x → 2ⁿ + x) (+-comm b₁' (2ⁿ + b₂')) ⟩
+         2ⁿ + (2ⁿ + b₂' + b₁')       ≡⟨ cong (λ x → 2ⁿ + x) (+-assoc 2ⁿ b₂' b₁') ⟩
+         2ⁿ + (2ⁿ + (b₂' + b₁'))     ≡⟨ sym (+-assoc 2ⁿ 2ⁿ (b₂' + b₁')) ⟩
+         2ⁿ + 2ⁿ + (b₂' + b₁')       ≡⟨ cong (λ x → 2ⁿ + 2ⁿ + x) (+-comm b₂' b₁') ⟩
+         2ⁿ + 2ⁿ + (b₁' + b₂')       ≡⟨ cong (λ x → 2ⁿ + 2ⁿ + x) prf ⟩
+         2ⁿ + 2ⁿ + (2ⁿ + bₛ')        ∎
+bit-adder-correct (true ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' = {!!}
+bit-adder-correct (true ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ' = {!!}
+bit-adder-correct (true ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' = {!!}
+bit-adder-correct (false ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ' = {!!}
+bit-adder-correct (false ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' = {!!}
+bit-adder-correct (false ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ' = {!!}
+bit-adder-correct (false ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' = prf
+
+-- bit-adder-correct (true  ∷ b₁) (true  ∷ b₂) | prf = {!!}
+-- bit-adder-correct (true  ∷ b₁) (false ∷ b₂) | prf = {!!}
+-- bit-adder-correct (_∷_ {n} false b₁) (true  ∷ b₂) | prf with b₁ +ₙ b₂
+-- ...             | bitsum , true = 
+--   let b₁' = Bits-toℕ' b₁
+--       b₂' = Bits-toℕ' b₂
+--       bitsum' = Bits-toℕ' bitsum
+--       2ⁿ = pow₂ n
+--   in begin b₁' + (pow₂ n + zero + b₂') 
+--                ≡⟨ cong (_+_ b₁') (+-comm (pow₂ n + zero) b₂') ⟩ 
+--            b₁' + (b₂' + (pow₂ n + zero)) 
+--                ≡⟨ sym (+-assoc b₁' b₂' (pow₂ n + zero)) ⟩ 
+--            b₁' + b₂' + (pow₂ n + zero)
+--                ≡⟨ cong (λ x → x + (pow₂ n + zero)) prf ⟩
+--            pow₂ n + zero + bitsum' + (pow₂ n + zero)
+--                ≡⟨ +-assoc (pow₂ n + zero) bitsum'  (pow₂ n + zero) ⟩
+--            pow₂ n + zero + (bitsum' + (pow₂ n + zero))
+--                ≡⟨ +-assoc (pow₂ n) 0 (bitsum' + (pow₂ n + 0)) ⟩ 
+--            pow₂ n + (bitsum' + (pow₂ n + 0))
+--                ≡⟨ cong (λ x → pow₂ n + x) (+-comm bitsum' (pow₂ n + 0)) ⟩
+--            pow₂ n + (pow₂ n + zero + bitsum')
+--                ≡⟨ sym (+-assoc (pow₂ n) (pow₂ n + 0) bitsum') ⟩
+--            pow₂ n + (pow₂ n + zero) + bitsum'
+--                ≡⟨ cong (λ x → pow₂ n + x + bitsum') (sym (+-right-identity (pow₂ n + 0))) ⟩
+--            pow₂ n + (pow₂ n + zero + zero) + bitsum'
+--                ≡⟨ cong (λ x → x + bitsum') (sym (+-assoc (pow₂ n) (pow₂ n + 0) 0)) ⟩
+--            (pow₂ n + (pow₂ n + zero) + zero + bitsum' ∎)
+-- ...             | bitsum , false rewrite +-right-identity (pow₂ n) = {!!}
+-- bit-adder-correct (false ∷ b₁) (false ∷ b₂) | prf = prf
 
