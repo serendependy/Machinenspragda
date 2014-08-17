@@ -56,19 +56,13 @@ _-₂_ : Bit → Bit → (Bit × Bit)
 bit₁ -₂ bit₂ = bit₁ +₂ bit₂ carry true
 
 {-
-  The workhorse here is foldMe, which takes the bits
-at the same position of each byte, computes a bit sum and carry,
-adds the bit sum to the sum-in-progress and passes along this and
-the new carry.
--}
-
+ Sadly using fold makes proofs hard to manage 
+ -}
 _+ₙ_carry_ : ∀ {n} → Bits n → Bits n → Bit → (Bits n × Bit)
-b₁ +ₙ b₂ carry c = (foldr (λ n → (Bits n) × Bit) foldMe ([] , c) (zip b₁ b₂))
-  where
-    foldMe : ∀ {n} →  Bit × Bit → (Bits n) × Bit → (Bits (suc n) × Bit)
-    foldMe (bit₁ , bit₂) (bits , c) = 
-      let (c' , sum) = bit₁ +₂ bit₂ carry c
-      in (sum ∷ bits , c')
+[] +ₙ [] carry c = [] , c
+(x ∷ b₁) +ₙ x₁ ∷ b₂ carry c with b₁ +ₙ b₂ carry c 
+... | bts , c' with x +₂ x₁ carry c'
+... | c'' , s = s ∷ bts , c''
 
 _+ₙ_ : ∀ {n} → Bits n → Bits n → (Bits n × Bit)
 b₁ +ₙ b₂ = b₁ +ₙ b₂ carry false
