@@ -90,9 +90,26 @@ bit-adder-correct (true ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ 
          2ⁿ + 2ⁿ + (b₂' + b₁')       ≡⟨ cong (λ x → 2ⁿ + 2ⁿ + x) (+-comm b₂' b₁') ⟩
          2ⁿ + 2ⁿ + (b₁' + b₂')       ≡⟨ cong (λ x → 2ⁿ + 2ⁿ + x) prf ⟩
          2ⁿ + 2ⁿ + (2ⁿ + bₛ')        ∎
-bit-adder-correct (true ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' = {!!}
-bit-adder-correct (true ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ' = {!!}
-bit-adder-correct (true ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' = {!!}
+bit-adder-correct (true ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' 
+  rewrite +-right-identity 2ⁿ | +-right-identity (2ⁿ + 2ⁿ) = 
+   begin 2ⁿ + b₁' + (2ⁿ + b₂')       ≡⟨ +-assoc 2ⁿ b₁' (2ⁿ + b₂') ⟩
+         2ⁿ + (b₁' + (2ⁿ + b₂'))     ≡⟨ cong (_+_ 2ⁿ) (sym (+-assoc b₁' 2ⁿ b₂')) ⟩
+         2ⁿ + (b₁' + 2ⁿ + b₂')       ≡⟨ cong (λ x → 2ⁿ + (x + b₂')) (+-comm b₁' 2ⁿ) ⟩
+         2ⁿ + (2ⁿ + b₁' + b₂')       ≡⟨ cong (_+_ 2ⁿ) (+-assoc 2ⁿ b₁' b₂') ⟩
+         2ⁿ + (2ⁿ + (b₁' + b₂'))     ≡⟨ sym (+-assoc 2ⁿ 2ⁿ (b₁' + b₂')) ⟩
+         2ⁿ + 2ⁿ + (b₁' + b₂')       ≡⟨ cong (_+_ (2ⁿ + 2ⁿ)) prf ⟩
+         2ⁿ + 2ⁿ + bₛ'               ∎
+bit-adder-correct (true ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ'
+  rewrite +-right-identity 2ⁿ | +-right-identity (2ⁿ + 2ⁿ) =
+   begin 2ⁿ + b₁' + b₂'              ≡⟨ +-assoc 2ⁿ b₁' b₂' ⟩
+         2ⁿ + (b₁' + b₂')            ≡⟨ cong (_+_ 2ⁿ) prf ⟩
+         2ⁿ + (2ⁿ + bₛ')             ≡⟨ sym (+-assoc 2ⁿ 2ⁿ bₛ') ⟩
+         2ⁿ + 2ⁿ + bₛ'               ∎
+bit-adder-correct (true ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ'
+  rewrite +-right-identity 2ⁿ =
+    begin 2ⁿ + b₁' + b₂'             ≡⟨ +-assoc 2ⁿ b₁' b₂' ⟩
+    2ⁿ + (b₁' + b₂')                 ≡⟨ cong (_+_ 2ⁿ) prf ⟩
+    2ⁿ + bₛ'                         ∎
 bit-adder-correct (false ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ' = {!!}
 bit-adder-correct (false ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' = {!!}
 bit-adder-correct (false ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ' = {!!}
