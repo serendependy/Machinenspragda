@@ -19,7 +19,7 @@ open import Function
 
 open import Parity
 open import BitView
-open import BitPrimitives
+open import Bits
 
 module Machine where
 
@@ -29,8 +29,6 @@ b1 == b2 = eq-0 (~ (b1 ^ (~ b2)))
 -- mux
 mux₂ : BitOp 3
 mux₂ bₘ b₀ b₁ = (not bₘ ∧ b₀) ∨ (bₘ ∧ b₁)
--- mux₂ true  b₀ b₁ = b₁
--- mux₂ false b₀ b₁ = b₀
 
 muxₙ : ∀ {m n} → Bits (suc m) → Bits (suc n) → Bit
 muxₙ {m = mux-len} mux bits = 
@@ -88,11 +86,3 @@ private
 
     b2 : Byte -- 171
     b2 = true ∷ false ∷ true ∷ false ∷ true ∷ false ∷ true ∷ [ true ]
-
-open import Relation.Binary.PropositionalEquality
-  hiding ([_])
-
-
-
-
---sym (lem₁ (pow₂ l)) = lshift¹ l #0
