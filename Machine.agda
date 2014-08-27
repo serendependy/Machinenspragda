@@ -30,12 +30,18 @@ b1 == b2 = eq-0 (~ (b1 ^ (~ b2)))
 mux₂ : BitOp 3
 mux₂ bₘ b₀ b₁ = (not bₘ ∧ b₀) ∨ (bₘ ∧ b₁)
 
-muxₙ : ∀ {m n} → Bits (suc m) → Bits (suc n) → Bit
-muxₙ {m = mux-len} mux bits = 
-  let all-mux = bits-tabulate (suc mux-len)    -- tabulate all possible mux configurations
-      sel-mux = map (_==_ mux) all-mux         -- find the given mux configuration
-      (bits⊓ , sel-mux⊓) = bits-⊓ bits sel-mux -- fit input to common size
-  in not (eq-0 $ bits⊓ & sel-mux⊓)
+muxₙ-curried : ∀ {#ops #bits #mux} → Vec (BitsOp-curried #bits) #ops → Bits #mux → BitsOp-curried (suc #ops)
+muxₙ-curried {#mux = #mux} ops mux input-bits =
+  let all-mux = bits-tabulate #mux
+      sel-mux = map (_==_ mux) all-mux
+  in {!!}
+
+-- muxₙ : ∀ {m n} → Bits (suc m) → Bits (suc n) → Bit
+-- muxₙ {m = mux-len} mux bits = 
+--   let all-mux = bits-tabulate (suc mux-len)    -- tabulate all possible mux configurations
+--       sel-mux = map (_==_ mux) all-mux         -- find the given mux configuration
+--       (bits⊓ , sel-mux⊓) = bits-⊓ bits sel-mux -- fit input to common size
+--   in not (eq-0 $ bits⊓ & sel-mux⊓)
 
 -- addition
 _+₂ʰ_ : Bit → Bit → (Bit × Bit)

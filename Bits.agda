@@ -84,6 +84,25 @@ module Primitives where
   ...         | tab = (_∷_ false) ∷ [ _∷_ true ] ⊛* tab
 
 
+  open import Relation.Binary.PropositionalEquality
+    renaming ([_] to ⟦_⟧)
+  open import Data.Nat.Properties.Simple
+
+  mux-tabulate : ∀ n m → Vec (Bits n) m
+  mux-tabulate n m with bits-tabulate n | pow₂ n | inspect pow₂ n
+  ...        | all-bits | 2ⁿ | insp with compare 2ⁿ m 
+  mux-tabulate n .(suc (pow₂ n + k)) | all-bits | .(pow₂ n) | ⟦ refl ⟧ | less .(pow₂ n) k =
+    (all-bits ++ tabulate (λ _ → bits-0)) ∷ʳ bits-0 -- pad out with 0s
+  mux-tabulate n .(pow₂ n) | all-bits | .(pow₂ n) | ⟦ refl ⟧ | equal .(pow₂ n) =
+    all-bits
+  mux-tabulate n m | all-bits | .(suc (m + k)) | ⟦ eq ⟧ | greater .m k = bits-chopped -- chop off extra
+    where
+      all-bits-rewrite : Vec (Bits n) (m + suc k)
+      all-bits-rewrite rewrite +-suc m k | sym eq = all-bits
+
+      bits-chopped : Vec (Bits n) m
+      bits-chopped = take m all-bits-rewrite
+
   -- fit two sets of bits to the same size (glb)
 
   bits-⊓ : ∀ {n m} → Bits n → Bits m → (Bits (n ⊓ m) × Bits (n ⊓ m))
@@ -106,6 +125,9 @@ module Primitives where
       helper l 0 = Bits l
       helper l (suc n) = Bits l → helper l n
 
+  BitsOp-curried : ℕ → Set
+  BitsOp-curried n = ∀ {len} → Vec (Bits len) n → Bits len
+
   ~_ : BitsOp 1
   ~ b = map not b
 
@@ -123,52 +145,46 @@ module Primitives where
   eq-0 bits = not (foldr₁ _∨_ $ false ∷ bits)
 
   -- bit-parity
-  bit-parity : ∀ {n} → Bits (suc n) → Bit
-  bit-parity = head
+  bit-parity : ∀ {n} → Bits n → Bit
+  bit-parity [] = false
+  bit-parity (x ∷ bits) = x
 
   bit-parity-extend : ∀ {n} → Bits n → Bits (suc n)
-  bit-parity-extend [] = [ false ]
-  bit-parity-extend (x ∷ bits) = x ∷ x ∷ bits
+  bit-parity-extend bits = bit-parity bits ∷ bits
 
-  open import Data.Nat.Properties.Simple
+  -- helper functions for shift
+  private
+      open import Data.Nat.Properties.Simple
 
-  _⟪ℕ_ : ∀ {n} → Bits n → ℕ → Bits n
-  _⟪ℕ_ {n} bits shift = drop shift $ bits++0s
-    where
-      bits++0s : Bits (shift + n)
-      bits++0s rewrite +-comm shift n = bits ++ tabulate (const false)
+      _⟪ℕ_ : ∀ {n} → Bits n → ℕ → Bits n
+      _⟪ℕ_ {n} bits shift = drop shift $ bits++0s
+        where
+          bits++0s : Bits (shift + n)
+          bits++0s rewrite +-comm shift n =
+            bits ++ tabulate (const false)
 
-  _⟫ℕₗ_ : ∀ {n} → Bits n → ℕ → Bits n
-  _⟫ℕₗ_ {n} bits shift = take n $ 0s++bits
-    where
-      0s++bits : Bits (n + shift)
-      0s++bits rewrite +-comm n shift = tabulate {shift} (const false) ++ bits
+      _⟫ℕₗ_ : ∀ {n} → Bits n → ℕ → Bits n
+      _⟫ℕₗ_ {n} bits shift = take n $ 0s++bits
+        where
+          0s++bits : Bits (n + shift)
+          0s++bits rewrite +-comm n shift =
+            tabulate {shift} (const false) ++ bits
 
-  -- _⟪₁ : ∀ {n} → Bits n → Bits n
-  -- _⟪₁ {n} bits = drop 1 $ bits ∷ʳ false
+      _⟫ℕₐ_ : ∀ {n} → Bits n → ℕ → Bits n
+      _⟫ℕₐ_ {n} bits shift = take n $ sigs++bits
+        where
+          sigs++bits : Bits (n + shift)
+          sigs++bits rewrite +-comm n shift =
+            tabulate {shift} (const $ bit-parity bits) ++ bits
 
-  -- _⟪_ : ∀ {n m} → Bits n → Bits m → Bits n
-  -- bᵥ ⟪ bₛ with Conversions.Bits-toℕ' bₛ
-  -- bᵥ ⟪ bₛ | shift = helper bᵥ shift
-  --   where
-  --     helper : ∀ {n} → Bits n → ℕ → Bits n
-  --     helper b zero = b
-  --     helper b (suc s) = helper (b ⟪₁) s
+  _⟪_ : ∀ {n m} → Bits n → Bits m → Bits n
+  _⟪_ {m = m} bₙ bₘ = bₙ ⟪ℕ (Conversions.Bits-toℕ' bₘ)
 
-  -- _⟫₁ₗ : ∀ {n} → Bits n → Bits n
-  -- _⟫₁ₗ {n} bits = take n $ false∷bits
-  --   where
-  --     open import Data.Nat.Properties.Simple
-  --     false∷bits : Bits (n + 1)
-  --     false∷bits rewrite +-comm n 1 = false ∷ bits
-   
-  -- _⟫₁ₐ : ∀ {n} → Bits n → Bits n
-  -- _⟫₁ₐ {n} bits = take n $ parity∷bits
-  --   where
-  --     open import Data.Nat.Properties.Simple
-  --     parity∷bits : Bits (n + 1)
-  --     parity∷bits rewrite +-comm n 1 = bit-parity-extend bits
- 
+  _⟫ₗ_ : ∀ {n m} → Bits n → Bits m → Bits n
+  _⟫ₗ_ {m = m} bₙ bₘ = bₙ ⟫ℕₗ (Conversions.Bits-toℕ' bₘ)
+
+  _⟫ₐ_ : ∀ {n m} → Bits n → Bits m → Bits n
+  _⟫ₐ_ {m = m} bₙ bₘ = bₙ ⟫ℕₐ (Conversions.Bits-toℕ' bₘ)
 
 open Primitives public
 
