@@ -85,8 +85,8 @@ module Primitives where
   ...         | tab = (_∷_ false) ∷ [ _∷_ true ] ⊛* tab
 
   mux-tabulate : ∀ n m → Vec (Bits n) m
-  mux-tabulate n m with bits-tabulate n | pow₂ n
-  ...        | all-bits | 2ⁿ = vec-resize all-bits (tabulate $ const false) m
+  mux-tabulate n m with bits-tabulate n
+  ...        | all-bits = vec-resize all-bits (tabulate $ const false) m
 
   -- fit two sets of bits to the same size (glb)
 

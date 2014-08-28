@@ -29,7 +29,21 @@ open import Machine
 
 module BitProperties where
 
--- ambitious
+-- if I tabulate all the bits of a given size, any bit of that size is contained in it.
+bits-tabulate-covers : ∀ {n} → (bits : Bits n) → bits ∈ (bits-tabulate n)
+bits-tabulate-covers {zero} [] = here
+bits-tabulate-covers {suc n} (x ∷ bits) with bits-tabulate n 
+...                | all-bits-n with bits-tabulate-covers bits 
+...                | prf = {!!}
+-- bits-tabulate-covers {suc zero} (true ∷ .[])  | [] ∷ [] | here = there here
+-- bits-tabulate-covers {suc zero} (false ∷ .[]) | [] ∷ [] | here = here
+-- bits-tabulate-covers {suc zero} (x ∷ [])      | [] ∷ [] | there ()
+-- bits-tabulate-covers {suc (suc n)} (x ∷ bits) | all-bits-n | prf with bits-tabulate n 
+-- ...                | all-bits-n' = {!!}
+
+
+
+-- bit adder
 bit-adder-correct : ∀ {n} → (b₁ b₂ : Bits n) → 
                       (Bits-toℕ' b₁ + Bits-toℕ' b₂) ≡ Bits×Carry-toℕ' (b₁ +ₙ b₂)
 bit-adder-correct [] [] = refl
