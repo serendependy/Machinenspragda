@@ -5,6 +5,7 @@ open import Data.Product hiding (map)
 open import Function using (_$_ ; _∘_ ; const)
 
 open import Parity
+open import Util.Vec
 
 module Bits where
 
@@ -83,25 +84,9 @@ module Primitives where
   bits-tabulate (suc n) with bits-tabulate n
   ...         | tab = (_∷_ false) ∷ [ _∷_ true ] ⊛* tab
 
-
-  open import Relation.Binary.PropositionalEquality
-    renaming ([_] to ⟦_⟧)
-  open import Data.Nat.Properties.Simple
-
   mux-tabulate : ∀ n m → Vec (Bits n) m
-  mux-tabulate n m with bits-tabulate n | pow₂ n | inspect pow₂ n
-  ...        | all-bits | 2ⁿ | insp with compare 2ⁿ m 
-  mux-tabulate n .(suc (pow₂ n + k)) | all-bits | .(pow₂ n) | ⟦ refl ⟧ | less .(pow₂ n) k =
-    (all-bits ++ tabulate (λ _ → bits-0)) ∷ʳ bits-0 -- pad out with 0s
-  mux-tabulate n .(pow₂ n) | all-bits | .(pow₂ n) | ⟦ refl ⟧ | equal .(pow₂ n) =
-    all-bits
-  mux-tabulate n m | all-bits | .(suc (m + k)) | ⟦ eq ⟧ | greater .m k = bits-chopped -- chop off extra
-    where
-      all-bits-rewrite : Vec (Bits n) (m + suc k)
-      all-bits-rewrite rewrite +-suc m k | sym eq = all-bits
-
-      bits-chopped : Vec (Bits n) m
-      bits-chopped = take m all-bits-rewrite
+  mux-tabulate n m with bits-tabulate n | pow₂ n
+  ...        | all-bits | 2ⁿ = vec-resize all-bits (tabulate $ const false) m
 
   -- fit two sets of bits to the same size (glb)
 
