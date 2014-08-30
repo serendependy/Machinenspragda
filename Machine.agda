@@ -48,9 +48,9 @@ _+₂ʰ_ : Bit → Bit → (Bit × Bit)
 bit₁ +₂ʰ bit₂ = (bit₁ ∧ bit₂) , (bit₁ xor bit₂)
 
 _+₂_carry_ : Bit → Bit → (carry : Bit) → (Bit × Bit)
-bit₁ +₂ bit₂ carry r =
+bit₁ +₂ bit₂ carry c =
   let (c' , s') = bit₁ +₂ʰ bit₂
-      (c'' , s'') = s' +₂ʰ r
+      (c'' , s'') = s' +₂ʰ c
   in  (c' ∨ c'' , s'')
 
 _+₂_ : Bit → Bit → (Bit × Bit)

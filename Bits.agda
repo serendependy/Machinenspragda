@@ -5,7 +5,6 @@ open import Data.Product hiding (map)
 open import Function using (_$_ ; _∘_ ; const)
 
 open import Parity
-open import Util.Vec
 
 module Bits where
 
@@ -22,24 +21,46 @@ Byte = Bits 8
 module Conversions where
   open import BitView
   open import Data.Fin
-    renaming (toℕ to Fin-toℕ)
-    hiding (_+_)
+    renaming (toℕ to Fin-toℕ ; _+_ to _Fin+_)
+
+  open import Data.Nat.Properties.Simple
+  open import Relation.Binary.PropositionalEquality
+    renaming ([_] to ⟦_⟧)
+  open import Data.Fin.Properties
+    hiding (reverse)
+
+  open import Function
+
+  Bit-toFin : Bit → Fin 2
+  Bit-toFin true = suc zero
+  Bit-toFin false = zero
 
   Bit-toℕ : Bit → ℕ
-  Bit-toℕ true  = 1
-  Bit-toℕ false = 0
+  Bit-toℕ = Fin-toℕ ∘ Bit-toFin
 
   Bit-toBitView : (x : Bit) → BitView (Bit-toℕ x) 1
   Bit-toBitView true  = ₂#1
   Bit-toBitView false = ₂#0
 
-
   bin-placevals : ∀ n → Vec ℕ n
   bin-placevals n = reverse $ map (pow₂ ∘ Fin-toℕ) (allFin n)
+
+  Bits-toFin : ∀ {n} → Bits n → Fin (pow₂ n)
+  Bits-toFin [] = zero
+  Bits-toFin (_∷_ {n} true bits) rewrite +-right-identity (pow₂ n) =
+             raise (pow₂ n) (Bits-toFin bits)
+  Bits-toFin (_∷_ {n} false bits) rewrite +-right-identity (pow₂ n) =
+             inject+ (pow₂ n) (Bits-toFin bits)
+
+  -- Bits-fromFin : ∀ {n} → Fin (pow₂ n) → Bits n
+  -- Bits-fromFin i = {!!}
 
   Bits-toℕ' : ∀ {n} → Bits n → ℕ
   Bits-toℕ' [] = 0
   Bits-toℕ' .{suc n} (_∷_ {n} x bits) = Bit-toℕ x * pow₂ n + Bits-toℕ' bits
+
+  Bits-toℕ'' : ∀ {n} → Bits n → ℕ
+  Bits-toℕ'' = Fin-toℕ ∘ Bits-toFin
 
   -- the 'J' way to compute the value
   -- +/ (|. 2 ^ i. n) * bits
@@ -75,27 +96,20 @@ module Conversions where
 
 
 module Primitives where
+  open import Util.Vec
 
   bits-0 : ∀ {n} → Bits n
-  bits-0 {n} = tabulate (λ _ → false)
+  bits-0 {n} = tabulate (const false)
 
   bits-tabulate : ∀ n → Vec (Bits n) (pow₂ n)
   bits-tabulate zero = [ [] ]
-  bits-tabulate (suc n) with bits-tabulate n
-  ...         | tab = (_∷_ false) ∷ [ _∷_ true ] ⊛* tab
+  bits-tabulate (suc n) = (_∷_ false) ∷ [ _∷_ true ] ⊛* (bits-tabulate n)
 
-  mux-tabulate : ∀ n m → Vec (Bits n) m
-  mux-tabulate n m with bits-tabulate n
-  ...        | all-bits = vec-resize all-bits (tabulate $ const false) m
-
-  -- fit two sets of bits to the same size (glb)
+  mux-tabulate : ∀ n m → Vec (Bits n) (pow₂ n ⊓ m)
+  mux-tabulate n m = vec-⊓ (bits-tabulate n) m
 
   bits-⊓ : ∀ {n m} → Bits n → Bits m → (Bits (n ⊓ m) × Bits (n ⊓ m))
-  bits-⊓ [] [] = [] , []
-  bits-⊓ [] (x ∷ b2) = [] , []
-  bits-⊓ (x ∷ b1) [] = [] , []
-  bits-⊓ (x ∷ b1) (x₁ ∷ b2) with bits-⊓ b1 b2
-  ...  | b1⊓ , b2⊓ = (x ∷ b1⊓) , x₁ ∷ b2⊓
+  bits-⊓ = vec-⊓₂
 
   -- bit operations for bytes
 
