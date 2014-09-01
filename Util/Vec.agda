@@ -10,7 +10,7 @@ open import Function
 open import Algebra.Structures
 open IsCommutativeSemiringWithoutOne ⊔-⊓-0-isCommutativeSemiringWithoutOne
   renaming (*-comm to ⊓-comm)
-  hiding (sym)
+  hiding (sym ; +-comm)
 
 module Util.Vec where
 
@@ -19,6 +19,12 @@ vec-resize {n = n} xs a m with compare n m
 vec-resize xs a .(suc (n + k)) | less n k rewrite sym $ +-suc n k = xs ++ (tabulate $ const a)
 vec-resize xs a n | equal .n = xs
 vec-resize xs a m | greater .m k rewrite sym $ +-suc m k = take m xs
+
+vec-resizeₗ : ∀ {n} {α} {A : Set α} → Vec A n → A → (m : ℕ) → Vec A m
+vec-resizeₗ {n = n} xs a m with compare n m
+vec-resizeₗ xs a .(suc (n + k)) | less n k rewrite +-comm n k = (tabulate {suc k} (const a)) ++ xs
+vec-resizeₗ xs a n | equal .n = xs
+vec-resizeₗ xs a m | greater .m k rewrite sym $ +-suc m k = take m xs
 
 vec-⊓ : ∀ {m} {α} {A : Set α} → 
         Vec A m → (n : ℕ) → Vec A (m ⊓ n)

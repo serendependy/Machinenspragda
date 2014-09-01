@@ -2,6 +2,7 @@ open import Data.Bool
 
 open import Data.Nat
   renaming (_≟_ to _ℕ≟_)
+  hiding (fold)
 open import Data.Fin
   hiding (fromℕ ; _+_ ; _≤_)
   renaming (toℕ to Fin-toℕ)
@@ -30,18 +31,32 @@ b1 == b2 = eq-0 (~ (b1 ^ (~ b2)))
 mux₂ : BitOp 3
 mux₂ bₘ b₀ b₁ = (not bₘ ∧ b₀) ∨ (bₘ ∧ b₁)
 
--- muxₙ-curried : ∀ {#ops #bits #mux} → Vec (BitsOp-curried #bits) #ops → Bits #mux → BitsOp-curried (suc #ops)
--- muxₙ-curried {#mux = #mux} ops mux {len = #input-bits} input-bits =
---   let all-mux = mux-tabulate #mux #input-bits -- tabulate all possible mux configurations
---       sel-mux = map (_==_ mux) all-mux        -- find the mux configuration given
---   in {!!}
+muxₙ-curried : ∀ {#bits #mux} → Vec (BitsOp-curried #bits (pow₂ #mux)) (pow₂ #mux) →
+                 Bits #mux → BitsOp-curried #bits (pow₂ #mux)
+muxₙ-curried {#bits} {#mux} ops mux inputs = 
+  let sel-mux = map (bit-extend {#bits} ∘ (_==_ mux)) (bits-tabulate #mux)
+      post-op = map (λ op → op inputs) ops
+  in foldr₁ _∣_ (bits-0 ∷ zipWith _&_ post-op sel-mux)
 
--- muxₙ : ∀ {m n} → Bits (suc m) → Bits (suc n) → Bit
--- muxₙ {m = mux-len} mux bits = 
---   let all-mux = bits-tabulate (suc mux-len)    -- tabulate all possible mux configurations
---       sel-mux = map (_==_ mux) all-mux         -- find the given mux configuration
---       (bits⊓ , sel-mux⊓) = bits-⊓ bits sel-mux -- fit input to common size
---   in not (eq-0 $ bits⊓ & sel-mux⊓)
+private
+  open import Function
+
+  open Bits.Conversions
+  b₁ = Bits-fromℕ 8  85
+  b₂ = Bits-fromℕ 8  65
+  b₃ = Bits-fromℕ 8 255
+  b₄ = bits-0 {8}
+
+  inputs = b₁ ∷ b₂ ∷ b₃ ∷ [ b₄ ]
+
+  ops : Vec (BitsOp-curried 8 4) 4
+  ops = const b₁ ∷ const b₂ ∷ const b₃ ∷ [ const b₄ ]
+  mux = lookup (suc zero) (bits-tabulate 2)
+
+  open import Relation.Binary.PropositionalEquality
+    hiding ([_])
+  prf : muxₙ-curried ops mux inputs ≡ b₂
+  prf = refl
 
 -- addition
 _+₂ʰ_ : Bit → Bit → (Bit × Bit)

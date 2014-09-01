@@ -87,9 +87,13 @@ module Conversions where
   Bits-fromBitView (bv #0) = Bits-fromBitView bv ∷ʳ false
   Bits-fromBitView (bv #1) = Bits-fromBitView bv ∷ʳ true
 
-  Bits-fromℕ : ℕ → Σ[ n ∈ ℕ ] Bits n
-  Bits-fromℕ n with bitView n
+  Bits-fromℕΣ : ℕ → Σ[ n ∈ ℕ ] Bits n
+  Bits-fromℕΣ n with bitView n
   ...      | l , bv = l , Bits-fromBitView bv
+
+  open import Util.Vec
+  Bits-fromℕ : ∀ n → ℕ → Bits n
+  Bits-fromℕ n m = vec-resizeₗ (proj₂ (Bits-fromℕΣ m)) false n
 
   Byte-toℕ : Byte → ℕ
   Byte-toℕ byte = Bits-toℕ' byte
@@ -98,15 +102,20 @@ module Conversions where
 module Primitives where
   open import Util.Vec
 
-  bits-0 : ∀ {n} → Bits n
-  bits-0 {n} = tabulate (const false)
+-- promote a bit to bits
+  bit-extend : ∀ {n} → Bit → Bits n
+  bit-extend b = tabulate (const b)
 
+  bits-0 : ∀ {n} → Bits n
+  bits-0 = bit-extend false
+
+-- little bit of meta-bit-programming here
   bits-tabulate : ∀ n → Vec (Bits n) (pow₂ n)
   bits-tabulate zero = [ [] ]
   bits-tabulate (suc n) = (_∷_ false) ∷ [ _∷_ true ] ⊛* (bits-tabulate n)
 
-  mux-tabulate : ∀ n m → Vec (Bits n) (pow₂ n ⊓ m)
-  mux-tabulate n m = vec-⊓ (bits-tabulate n) m
+  mux-resize : ∀ {#bits} {#inputs} #mux → Vec (Bits #bits) (suc #inputs) → Vec (Bits #bits) (pow₂ #mux)
+  mux-resize #mux inputs = vec-resize inputs (last inputs) (pow₂ #mux)
 
   bits-⊓ : ∀ {n m} → Bits n → Bits m → (Bits (n ⊓ m) × Bits (n ⊓ m))
   bits-⊓ = vec-⊓₂
@@ -124,8 +133,11 @@ module Primitives where
       helper l 0 = Bits l
       helper l (suc n) = Bits l → helper l n
 
-  BitsOp-curried : ℕ → Set
-  BitsOp-curried n = ∀ {len} → Vec (Bits len) n → Bits len
+  -- BitsOp-curried : ℕ → Set
+  -- BitsOp-curried n = ∀ {len} → Vec (Bits len) n → Bits len
+
+  BitsOp-curried : ℕ → ℕ → Set
+  BitsOp-curried #bits #inputs = Vec (Bits #bits) #inputs → Bits #bits
 
   ~_ : BitsOp 1
   ~ b = map not b
