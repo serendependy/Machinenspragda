@@ -26,21 +26,22 @@ open Bits.Conversions
 
 open import BitView
 open import Machine
+open import Util.Vec
+
 
 module BitProperties where
 
 -- if I tabulate all the bits of a given size, any bit of that size is contained in it.
+btc-lemma-∷ : ∀ {#bits} {#bits-set} {bits} → {bits-set : Vec (Bits #bits) #bits-set} → bits ∈ bits-set → (x : Bit) → (x ∷ bits) ∈ (replicate (_∷_ x) ⊛ bits-set)
+btc-lemma-∷ {#bits} {.(suc n)} {bits} {.(_∷_ {_} {_} {n} bits xs)} (here {n = n} {x = .bits} {xs = xs}) x = here
+btc-lemma-∷ {#bits} {.(suc n)} {bits} {.(_∷_ {_} {_} {n} y xs)} (there {n = n} {x = .bits} {y = y} {xs = xs} prf) x = there (btc-lemma-∷ prf x)
+
+-- it ends up being easier to write out the raw subterms then to try to create aliases for them...
 bits-tabulate-covers : ∀ {n} → (bits : Bits n) → bits ∈ (bits-tabulate n)
 bits-tabulate-covers {zero} [] = here
-bits-tabulate-covers {suc n} (x ∷ bits) with bits-tabulate n 
-...                | all-bits-n with bits-tabulate-covers bits 
-...                | prf = {!!}
--- bits-tabulate-covers {suc zero} (true ∷ .[])  | [] ∷ [] | here = there here
--- bits-tabulate-covers {suc zero} (false ∷ .[]) | [] ∷ [] | here = here
--- bits-tabulate-covers {suc zero} (x ∷ [])      | [] ∷ [] | there ()
--- bits-tabulate-covers {suc (suc n)} (x ∷ bits) | all-bits-n | prf with bits-tabulate n 
--- ...                | all-bits-n' = {!!}
-
+bits-tabulate-covers {suc n} (x ∷ bits) with bits-tabulate-covers bits
+bits-tabulate-covers {suc n} (true  ∷ bits) | prf = (vec-∈-++ᵣ (vec-∈-++[] $ btc-lemma-∷ prf true) ((replicate (_∷_ false)) ⊛ bits-tabulate n))
+bits-tabulate-covers {suc n} (false ∷ bits) | prf = vec-∈-++ₗ (btc-lemma-∷ prf false) (((replicate (_∷_ true)) ⊛ (bits-tabulate n)) ++ [])
 
 
 -- bit adder

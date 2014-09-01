@@ -1,4 +1,6 @@
 open import Data.Nat
+open import Data.Fin
+  hiding (_+_)
 open import Data.Product
 open import Data.Bool
 
@@ -116,3 +118,14 @@ private
 lshift¹ : (l : ℕ) → BitView (pow₂ l) (suc l)
 lshift¹ 0 = ₂#1
 lshift¹ (suc l) rewrite sym $ lem₁ $ pow₂ l = lshift¹ l #0
+
+-- some more fancy conversions
+open import Data.Nat.Properties.Simple
+open import Util.Fin
+
+-- BitView-toFin : ∀ {val #bits} → BitView val #bits → Fin (pow₂ #bits)
+-- BitView-toFin ₂#0 = zero
+-- BitView-toFin ₂#1 = suc zero
+-- BitView-toFin (_#0 {l = l} bv) with BitView-toFin bv 
+-- ...         | ret = 2 *ℕF ret
+-- BitView-toFin (bv #1) = {!!}
