@@ -114,7 +114,8 @@ module Primitives where
   bits-tabulate zero = [ [] ]
   bits-tabulate (suc n) = (_∷_ false) ∷ [ _∷_ true ] ⊛* (bits-tabulate n)
 
-  mux-resize : ∀ {#bits} {#inputs} #mux → Vec (Bits #bits) (suc #inputs) → Vec (Bits #bits) (pow₂ #mux)
+  mux-resize : ∀ {#bits} {#inputs} #mux → Vec (Bits #bits) (suc #inputs) →
+                 Vec (Bits #bits) (pow₂ #mux)
   mux-resize #mux inputs = vec-resize inputs (last inputs) (pow₂ #mux)
 
   bits-⊓ : ∀ {n m} → Bits n → Bits m → (Bits (n ⊓ m) × Bits (n ⊓ m))

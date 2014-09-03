@@ -1,6 +1,7 @@
 open import Data.Nat
 open import Data.Vec
 open import Data.Product
+  hiding (map)
 
 open import Relation.Binary.PropositionalEquality
 open import Data.Nat.Properties
@@ -52,3 +53,10 @@ vec-∈-++ᵣ prf (x₁ ∷ xs₂) = there (vec-∈-++ᵣ prf xs₂)
 vec-∈-++[] : ∀ {m} {α} {A : Set α} → {x : A} → {xs : Vec A m} → x ∈ xs → x ∈ xs ++ []
 vec-∈-++[] here = here
 vec-∈-++[] (there prf) = there (vec-∈-++[] prf)
+
+vec-∈-map-cons : ∀ {#outer #inner} {α} {A : Set α} {xs} →
+                  {xss : Vec (Vec A #inner) #outer} → 
+                  xs ∈ xss → (a : A) → (a ∷ xs) ∈ (map (_∷_ a) xss)
+vec-∈-map-cons here a = here
+vec-∈-map-cons (there prf) a = there (vec-∈-map-cons prf a)
+                  
