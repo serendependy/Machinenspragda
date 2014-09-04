@@ -6,12 +6,16 @@ open import Data.Product
 open import Relation.Binary.PropositionalEquality
 open import Data.Nat.Properties
 open import Data.Nat.Properties.Simple
+open import Data.Vec.Properties
 open import Function
 
 open import Algebra.Structures
 open IsCommutativeSemiringWithoutOne ⊔-⊓-0-isCommutativeSemiringWithoutOne
   renaming (*-comm to ⊓-comm)
   hiding (sym ; +-comm)
+
+open import Relation.Binary
+open import Relation.Nullary
 
 module Util.Vec where
 
@@ -59,4 +63,15 @@ vec-∈-map-cons : ∀ {#outer #inner} {α} {A : Set α} {xs} →
                   xs ∈ xss → (a : A) → (a ∷ xs) ∈ (map (_∷_ a) xss)
 vec-∈-map-cons here a = here
 vec-∈-map-cons (there prf) a = there (vec-∈-map-cons prf a)
+
+vec-Dec-≡ : ∀ {α} {A : Set α} {n} → ⦃ dec-eq : Decidable {A = A} _≡_ ⦄ →
+              Decidable {A = Vec A n} _≡_
+vec-Dec-≡ [] [] = yes _≡_.refl
+vec-Dec-≡ ⦃ de ⦄ (x ∷ xs) (y ∷ ys) with de x y
+...     | yes x≡y with vec-Dec-≡ xs ys 
+vec-Dec-≡ (x ∷ xs) (.x ∷ .xs) | yes _≡_.refl | yes _≡_.refl = yes _≡_.refl
+vec-Dec-≡ (x ∷ xs) (y ∷ ys) | yes p | no ¬p = no (λ x∷xs≡y∷ys →
+          let x≡y , xs≡ys = ∷-injective x∷xs≡y∷ys in ¬p xs≡ys)
+vec-Dec-≡ (x ∷ xs) (y ∷ ys) | no ¬p = no (λ x∷xs≡y∷ys →
+          let x≡y , xs≡ys = ∷-injective x∷xs≡y∷ys in ¬p x≡y)
                   

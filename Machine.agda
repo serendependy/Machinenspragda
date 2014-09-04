@@ -31,12 +31,16 @@ b1 == b2 = eq-0 (~ (b1 ^ (~ b2)))
 mux₂ : BitOp 3
 mux₂ bₘ b₀ b₁ = (not bₘ ∧ b₀) ∨ (bₘ ∧ b₁)
 
-muxₙ-curried : ∀ {#bits #mux} → Vec (BitsOp-curried #bits (pow₂ #mux)) (pow₂ #mux) →
+muxₙ-curried : ∀ {#bits #mux} → Vec (Bits #bits) (pow₂ #mux) → Bits #mux → Bits #bits
+muxₙ-curried {#bits} {#mux} inputs mux =
+  let sel-mux = map ((bit-extend {#bits}) ∘ (_==_ mux)) (bits-tabulate #mux)
+  in foldr₁ _∣_ (bits-0 ∷ (zipWith _&_ inputs sel-mux))
+
+muxₙ-curriedops : ∀ {#bits #mux} → Vec (BitsOp-curried #bits (pow₂ #mux)) (pow₂ #mux) →
                  Bits #mux → BitsOp-curried #bits (pow₂ #mux)
-muxₙ-curried {#bits} {#mux} ops mux inputs = 
-  let sel-mux = map (bit-extend {#bits} ∘ (_==_ mux)) (bits-tabulate #mux)
-      post-op = map (λ op → op inputs) ops
-  in foldr₁ _∣_ (bits-0 ∷ zipWith _&_ post-op sel-mux)
+muxₙ-curriedops {#bits} {#mux} ops mux inputs = 
+  let post-op = map (λ op → op inputs) ops
+  in muxₙ-curried post-op mux
 
 private
   open import Function
@@ -55,7 +59,7 @@ private
 
   open import Relation.Binary.PropositionalEquality
     hiding ([_])
-  prf : muxₙ-curried ops mux inputs ≡ b₂
+  prf : muxₙ-curriedops ops mux inputs ≡ b₂
   prf = refl
 
 -- addition
