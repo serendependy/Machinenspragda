@@ -4,14 +4,14 @@ open import Data.Vec
 open import Data.Product
   hiding (map)
 open import Data.Fin
-  renaming (toℕ to Fin-toℕ)
+  renaming (toℕ to Fin-toℕ ; compare to compareFin)
   hiding   (_+_ ; pred)
 
 open import Relation.Binary.PropositionalEquality
   renaming ([_] to ⟦_⟧)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
-import Data.Nat.Properties
+open import Data.Nat.Properties
 open Data.Nat.Properties.SemiringSolver
   using (prove; solve; _:=_; con; var; _:+_; _:*_; :-_; _:-_)
 open import Reflection
@@ -70,32 +70,63 @@ bits-tabulate-covers {suc n} (true ∷ bits)  | all-bits | ⟦ _ ⟧ | prf =
 bits-tabulate-covers {suc n} (false ∷ bits) | all-bits | ⟦ _ ⟧ | prf = 
                      vec-∈-++ₗ (vec-∈-map-cons prf false) $ (map (_∷_ true) all-bits) ++ []
 
--- bits-tabulate-lookup-pair : ∀ {n} → (i : Fin (pred $ pow₂ n)) → (Bits n × Bits n)
--- bits-tabulate-lookup-pair {n} i with bits-tabulate n
--- bits-tabulate-lookup-pair {zero} () | all-bits
--- bits-tabulate-lookup-pair {suc n} i | all-bits with pow₂≡sk n 
--- ...                     | (k , prf) with subst Fin prf i | subst (Vec (Bits n)) prf all-bits
--- ...                     | i' | all-bits' = {!!}
+import Data.Vec.Equality
+open Data.Vec.Equality.Equality (setoid Bit)
+  renaming (refl to ≈₂-refl)
+  hiding (sym) 
+import Util.Fin
+open Util.Fin.HetEquality
+  renaming (_≈_ to _≈Fin_)
 
--- bits-tabulate-in-order : ∀ {n} → (i : Fin (pred $ pow₂ n)) → (suc ∘ Bits-toℕ' $ lookup (inject i) (bits-tabulate n)) ≡ (Bits-toℕ' $ lookup (raise 1 i) (bits-tabulate {!n!}))
--- bits-tabulate-in-order = {!!}
+open import Data.Vec.Properties
 
--- bits-tabulate-in-order : ∀ {n} → (i : Fin (pred $ pow₂ n)) →
+bits-tabulate-correct : ∀ {n} → (i : Fin (pow₂ n)) → (Bits-toℕ' $ lookup i (bits-tabulate n)) ≡ Fin-toℕ i
+bits-tabulate-correct {zero} zero = refl
+bits-tabulate-correct {zero} (suc ())
+bits-tabulate-correct {suc n} i = {!!}
+  where
+    reflection-lemma = solve 1 (λ x → (x :+ (x :+ (con 0))) := (x :+ x)) refl (pow₂ n)
+
+    i' = subst Fin reflection-lemma i
+    bt' = subst (Vec (Bits (suc n))) reflection-lemma (bits-tabulate (suc n))
+    
+    i=i' : i ≈Fin i'
+    i=i' = subst≈ i reflection-lemma
+
+    open Data.Vec.Equality.Equality (setoid (Bits (suc n)))
+      renaming (refl to ≈ₙ-refl ; _≈_ to _≈ₙ_)
+    import Util.Vec
+    open Util.Vec.Equality (Bits (suc n))
+    bt=bt' : (bits-tabulate (suc n)) ≈ₙ bt'
+    bt=bt' = ≈-subst reflection-lemma (bits-tabulate (suc n))
+
+    lookup-eq = lookup-cong i=i' bt=bt'
+    -- bt' = map (_∷_ false) (bits-tabulate n) ++ map (_∷_ true) (bits-tabulate n)
+    -- -- bt' = subst (Vec (Bits (suc n))) reflection-lemma (bits-tabulate (suc n))
+
+
+    -- open Equality (setoid (Bits (suc n)))
+    --   renaming (_≈_ to _≈ₙ_ ; _++-cong_ to ++-cong₂ ; refl to ≈ₙ-refl)
+    -- open UsingVectorEquality (setoid (Bits (suc n)))
+    -- bt-eq : bits-tabulate (suc n) ≈ₙ (map (_∷_ false) (bits-tabulate n)) ++ (map (_∷_ true) (bits-tabulate n))
+    -- bt-eq = ++-cong₂ (≈ₙ-refl (map ((_∷_ false)) (bits-tabulate n))) (xs++[]=xs _)
+
+    -- hole = {!!}
                            
 
-bits-tabulate-in-order : ∀ {n} → (i : Fin (pred $ pow₂ n)) →
-                           let (k , prf) = pow₂≡sk n
-                               all-bits = subst (Vec (Bits n)) prf $ bits-tabulate n
-                               i' = subst Fin (cong pred prf) i
-                           in ((suc ∘′ Bits-toℕ') $ lookup (raise 1 i') all-bits) ≡
-                              (Bits-toℕ' $ lookup (inject₁ i') all-bits)
-bits-tabulate-in-order {n} i with pow₂≡sk n
-...  | (k , prf) with subst (Vec (Bits n)) prf $ bits-tabulate n |
-                      subst Fin (cong pred prf) i
-bits-tabulate-in-order {zero} () | k , prf | all-bits' | i'
-bits-tabulate-in-order {suc n} i | ._ , prf | all-bits' | zero 
-  rewrite +-right-identity (pow₂ n) | prf = {!!}
-bits-tabulate-in-order {suc n} i | ._ , prf | all-bits' | suc i' = {!!}
+-- bits-tabulate-in-order : ∀ {n} → (i : Fin (pred $ pow₂ n)) →
+--                            let (k , prf) = pow₂≡sk n
+--                                all-bits = subst (Vec (Bits n)) prf $ bits-tabulate n
+--                                i' = subst Fin (cong pred prf) i
+--                            in ((suc ∘′ Bits-toℕ') $ lookup (raise 1 i') all-bits) ≡
+--                               (Bits-toℕ' $ lookup (inject₁ i') all-bits)
+-- bits-tabulate-in-order {n} i with pow₂≡sk n
+-- ...  | (k , prf) with subst (Vec (Bits n)) prf $ bits-tabulate n |
+--                       subst Fin (cong pred prf) i
+-- bits-tabulate-in-order {zero} () | k , prf | all-bits' | i'
+-- bits-tabulate-in-order {suc n} i | ._ , prf | all-bits' | zero 
+--   rewrite +-right-identity (pow₂ n) | prf = {!!}
+-- bits-tabulate-in-order {suc n} i | ._ , prf | all-bits' | suc i' = {!!}
 
 
 mux-curried-correct : ∀ {#bits} {#mux} →

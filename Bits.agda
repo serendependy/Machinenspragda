@@ -21,7 +21,7 @@ Byte = Bits 8
 module Conversions where
   open import BitView
   open import Data.Fin
-    renaming (toℕ to Fin-toℕ ; _+_ to _Fin+_)
+    renaming (toℕ to Fin-toℕ ; _+_ to _Fin+_ ; compare to Fin-compare)
 
   open import Data.Nat.Properties.Simple
   open import Relation.Binary.PropositionalEquality
@@ -30,6 +30,8 @@ module Conversions where
     hiding (reverse)
 
   open import Function
+
+  open import Util.Fin
 
   Bit-toFin : Bit → Fin 2
   Bit-toFin true = suc zero
@@ -51,6 +53,20 @@ module Conversions where
              raise (pow₂ n) (Bits-toFin bits)
   Bits-toFin (_∷_ {n} false bits) rewrite +-right-identity (pow₂ n) =
              inject+ (pow₂ n) (Bits-toFin bits)
+
+  Bits-fromFin : ∀ {n} → Fin (pow₂ n) → Bits n
+  Bits-fromFin {n} i with Fin-toℕ i
+  ... | i' with parity i'
+  Bits-fromFin i | .(n * 2) | even n = {!!}
+  Bits-fromFin i | .(suc (n * 2)) | odd n = {!!}
+
+-- with pow₂≡sk n 
+  -- ...   | k , 2ⁿ=sk with (pow₂ n) | 2ⁿ=sk 
+  -- Bits-fromFin zero    | k , 2ⁿ=sk | ._ | refl = tabulate (const false)
+  -- Bits-fromFin (suc i) | k , 2ⁿ=sk | ._ | refl with Fin-toℕ i
+  -- ... | i' with parity i'
+  -- Bits-fromFin (suc i) | k , 2ⁿ=sk | .(suc k) | refl | .(n * 2) | even n = {!!}
+  -- Bits-fromFin (suc i) | k , 2ⁿ=sk | .(suc k) | refl | .(suc (n * 2)) | odd n = {!!}
 
   -- Bits-fromFin : ∀ {n} → Fin (pow₂ n) → Bits n
   -- Bits-fromFin i = {!!}

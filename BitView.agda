@@ -1,5 +1,6 @@
 open import Data.Nat
 open import Data.Fin
+  renaming (toℕ to Fin-toℕ ; compare to Fin-compare)
   hiding (_+_)
 open import Data.Product
 open import Data.Bool
@@ -74,7 +75,7 @@ private
 
 -- really appending MSB
 _#ˡ'_ : ∀ {n n' l} → (bv₁ : BitView n' 1) → BitView n l → 
-                    BitView (n + from-BitView₁ bv₁ * pow₂ l) (suc l)
+                    BitView (n + n' * pow₂ l) (suc l)
 _#ˡ'_ {n = n} ₂#0 bv rewrite +-comm n        0 = #0-#ˡ bv
 _#ˡ'_ {l = l} ₂#1 bv rewrite +-comm (pow₂ l) 0 = #1-#ˡ bv
 () #0 #ˡ' bv
@@ -98,19 +99,17 @@ suc₂ (bv #1) with suc₂ bv
 ...  | true  , sbv = true  , sbv #0
 ...  | false , sbv = false , sbv #0
 
-bitView : ∀ (n : ℕ) → Σ[ l ∈ ℕ ] BitView n l
+bitView : (n : ℕ) → Σ[ l ∈ ℕ ] BitView n l
 bitView 0 = 1 , ₂#0
 bitView (suc n) with bitView n
 ...     | l , bvn with suc₂ bvn 
 ...     | b , sbvn = (if b then suc l else l) , sbvn
 
--- prove that bitView computes the smallest bit length
-
-import Data.Nat.Properties
-open Data.Nat.Properties.SemiringSolver
+private
+  import Data.Nat.Properties
+  open Data.Nat.Properties.SemiringSolver
     using (prove; solve; _:=_; con; var; _:+_; _:*_; :-_; _:-_)
 
-private
   lem₁ : (x : ℕ) → x * 2 ≡ x + 1 * x
   lem₁ = (solve 1 (λ x' → x' :* con 2 := x' :+ con 1 :* x') refl)
 
@@ -119,9 +118,39 @@ lshift¹ : (l : ℕ) → BitView (pow₂ l) (suc l)
 lshift¹ 0 = ₂#1
 lshift¹ (suc l) rewrite sym $ lem₁ $ pow₂ l = lshift¹ l #0
 
+open import Util.Fin
+open Properties
+bitView-Fin : ∀ {n} → (i : Fin (pow₂ n)) → BitView (Fin-toℕ i) (1 ⊔ n)
+bitView-Fin {zero} zero = ₂#0
+bitView-Fin {zero} (suc ())
+bitView-Fin {suc n} i with Fin-toℕ i | pow₂≡sk n
+...       | i' | k , 2ⁿ≡sk with compare i' (suc k)
+
+--less
+bitView-Fin {suc n} i | i' | .(i' + l) , 2ⁿ≡sk | less .i' l
+            with from-l+m≡nₗ i' l (sym 2ⁿ≡sk) | from-l+m≡nₗ-toℕ i' l (sym 2ⁿ≡sk)
+...              | i″ | i″-eq
+            with sym i″-eq | bitView-Fin {n} i″
+-- have to match on n for the return type
+bitView-Fin {suc zero} i | .(Fin-toℕ i″) | .(Fin-toℕ i″ + l) , 2ⁿ≡sk | less .(Fin-toℕ i″) l
+                 | i″ | i″-eq | refl | bv-i″ = bv-i″
+bitView-Fin {suc (suc n)} i | .(Fin-toℕ i″) | .(Fin-toℕ i″ + l) , 2ⁿ≡sk | less .(Fin-toℕ i″) l
+                 | i″ | i″-eq | refl | bv-i″ = #0-#ˡ bv-i″
+
+-- eq
+bitView-Fin {suc n} i | .(suc k) | k , 2ⁿ≡sk | equal .(suc k)
+            rewrite sym 2ⁿ≡sk = lshift¹ n
+
+-- greater
+bitView-Fin {suc n} i | .(suc (suc (k + k₁)))
+                      | k , 2ⁿ≡sk | greater .(suc k) k₁ = {!!}
+
+-- prove that bitView computes the smallest bit length
+
+
 -- some more fancy conversions
 open import Data.Nat.Properties.Simple
-open import Util.Fin
+--open import Util.Fin
 
 -- BitView-toFin : ∀ {val #bits} → BitView val #bits → Fin (pow₂ #bits)
 -- BitView-toFin ₂#0 = zero

@@ -74,4 +74,32 @@ vec-Dec-≡ (x ∷ xs) (y ∷ ys) | yes p | no ¬p = no (λ x∷xs≡y∷ys →
           let x≡y , xs≡ys = ∷-injective x∷xs≡y∷ys in ¬p xs≡ys)
 vec-Dec-≡ (x ∷ xs) (y ∷ ys) | no ¬p = no (λ x∷xs≡y∷ys →
           let x≡y , xs≡ys = ∷-injective x∷xs≡y∷ys in ¬p x≡y)
+
+module Equality {α} (A : Set α) where
+
+  import Data.Vec.Equality
+  open Data.Vec.Equality.Equality (setoid A)
+    renaming (refl to ≈-refl)
+
+  open UsingVectorEquality (setoid A)
+
+  import Util.Fin
+  open Util.Fin.HetEquality
+    renaming (_≈_ to _≈Fin_)
+
+  lookup-cong : ∀ {n₁ n₂} {i₁ i₂} → {xs : Vec A n₁} → {ys : Vec A n₂} → 
+                  i₁ ≈Fin i₂ → xs ≈ ys → lookup i₁ xs ≡ lookup i₂ ys
+  lookup-cong {i₁ = ()} eqFin []-cong
+  lookup-cong (0-cong x) (x¹≈x² ∷-cong eqVec) =
+    x¹≈x²
+  lookup-cong (+1-cong eqFin) (x¹≈x² ∷-cong eqVec) =
+    lookup-cong eqFin eqVec
+
+  ≈-subst : ∀ {m n} → (prf : m ≡ n) → (xs : Vec A m) → xs ≈ subst (Vec A) prf xs
+  ≈-subst _≡_.refl xs = ≈-refl xs
+
+  -- ≈-cong : ∀ {β} {n₁ n₂} {B : Set β} → {xs : Vec A n₁} → {ys : Vec A n₂} →
+  --         (f : ∀ {n} → Vec A n → B) → xs ≈ ys → f xs ≡ f ys
+  -- ≈-cong f Equality.[]-cong = _≡_.refl
+  -- ≈-cong f (x¹≈x² Equality.∷-cong eq) = {!!}
                   
