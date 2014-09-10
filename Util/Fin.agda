@@ -21,6 +21,11 @@ from-l+m≡nₗ : ∀ l r {n} → suc l + r ≡ n → Fin n
 from-l+m≡nₗ zero r refl = zero
 from-l+m≡nₗ (suc l) r refl = suc (from-l+m≡nₗ l r refl)
 
+to-≤ : ∀ {n} → (i : Fin n) → toℕ i ≤ n
+to-≤ {zero} ()
+to-≤ {suc n} zero = z≤n
+to-≤ {suc n} (suc i) = s≤s (to-≤ i)
+
 _+⊔_ : ∀ {n m} → Fin n → Fin m → Fin (n + m)
 _+⊔_ {.(suc n)} {m} (zero {n = n}) j
   rewrite +-comm (suc n) m = inject+ (suc n) j
@@ -56,10 +61,28 @@ suc m ∸Fℕ suc i = m ∸Fℕ i
 %2F {suc m} (suc (suc (suc i))) | ._ | refl = %2F {m} (suc i)
 
 module Properties where
+  open import Data.Nat.Properties
   from-l+m≡nₗ-toℕ :  ∀ l r {n} → (l+r≡n : suc l + r ≡ n) →
                        (toℕ $ from-l+m≡nₗ l r l+r≡n) ≡ l
   from-l+m≡nₗ-toℕ zero r refl = refl
   from-l+m≡nₗ-toℕ (suc l) r refl = cong suc (from-l+m≡nₗ-toℕ l r refl)
+
+  reduce≥-≡ : ∀ {m n} → (i : Fin (m + n)) → (i≥m : toℕ i ≥ m) →
+                raise m (reduce≥ i i≥m) ≡ i
+  reduce≥-≡ {zero} i i≥m = refl
+  reduce≥-≡ {suc m} zero ()
+  reduce≥-≡ {suc m} (suc i) (s≤s i≥m) = cong suc (reduce≥-≡ i i≥m)
+
+  -- misplaced
+  +≡-to-≤ₗ : ∀ m n l → m + n ≡ l → m ≤ l
+  +≡-to-≤ₗ m n .(m + n) refl = m≤m+n m n
+
+  +≡-to-≤ᵣ : ∀ m n l → m + n ≡ l → n ≤ l
+  +≡-to-≤ᵣ m n .(m + n) refl = n≤m+n m n
+
+  extract-+≤ : ∀ m {n l} → m + n ≤ m + l → n ≤ l
+  extract-+≤ zero m+n≤m+l = m+n≤m+l
+  extract-+≤ (suc m) (s≤s m+n≤m+l) = extract-+≤ m m+n≤m+l
 
 module HetEquality where
 

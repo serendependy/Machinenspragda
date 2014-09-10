@@ -1,7 +1,7 @@
 open import Data.Nat
 open import Data.Fin
   renaming (toℕ to Fin-toℕ ; compare to Fin-compare)
-  hiding (_+_)
+  hiding (_+_ ; _≤_)
 open import Data.Product
 open import Data.Bool
 
@@ -123,28 +123,57 @@ open Properties
 bitView-Fin : ∀ {n} → (i : Fin (pow₂ n)) → BitView (Fin-toℕ i) (1 ⊔ n)
 bitView-Fin {zero} zero = ₂#0
 bitView-Fin {zero} (suc ())
-bitView-Fin {suc n} i with Fin-toℕ i | pow₂≡sk n
-...       | i' | k , 2ⁿ≡sk with compare i' (suc k)
+bitView-Fin {suc n} i with Fin-toℕ i | inspect Fin-toℕ i | pow₂≡sk n
+...       | i' | i'-insp | k , 2ⁿ≡sk with compare i' (suc k)
 
 --less
-bitView-Fin {suc n} i | i' | .(i' + l) , 2ⁿ≡sk | less .i' l
-            with from-l+m≡nₗ i' l (sym 2ⁿ≡sk) | from-l+m≡nₗ-toℕ i' l (sym 2ⁿ≡sk)
-...              | i″ | i″-eq
-            with sym i″-eq | bitView-Fin {n} i″
--- have to match on n for the return type
-bitView-Fin {suc zero} i | .(Fin-toℕ i″) | .(Fin-toℕ i″ + l) , 2ⁿ≡sk | less .(Fin-toℕ i″) l
-                 | i″ | i″-eq | refl | bv-i″ = bv-i″
-bitView-Fin {suc (suc n)} i | .(Fin-toℕ i″) | .(Fin-toℕ i″ + l) , 2ⁿ≡sk | less .(Fin-toℕ i″) l
-                 | i″ | i″-eq | refl | bv-i″ = #0-#ˡ bv-i″
+bitView-Fin {suc n} i | i' | _ | .(i' + l) , 2ⁿ≡sk | less .i' l
+         with from-l+m≡nₗ i' l (sym 2ⁿ≡sk) | from-l+m≡nₗ-toℕ i' l (sym 2ⁿ≡sk)
+...           | i″ | i″-eq
+         with sym i″-eq | bitView-Fin {n} i″
+-- pattern match on n for the return type
+bitView-Fin {suc zero} i    | .(Fin-toℕ i″) | _ | .(Fin-toℕ i″ + l) , 2ⁿ≡sk
+                            | less .(Fin-toℕ i″) l | i″ | i″-eq | refl | bv-i″
+            = bv-i″
+bitView-Fin {suc (suc n)} i | .(Fin-toℕ i″) | _ | .(Fin-toℕ i″ + l) , 2ⁿ≡sk
+                            | less .(Fin-toℕ i″) l | i″ | i″-eq | refl | bv-i″
+            = #0-#ˡ bv-i″
 
 -- eq
-bitView-Fin {suc n} i | .(suc k) | k , 2ⁿ≡sk | equal .(suc k)
-            rewrite sym 2ⁿ≡sk = lshift¹ n
+bitView-Fin {suc n} i | .(suc k) | _ | k , 2ⁿ≡sk | equal .(suc k)
+         rewrite sym 2ⁿ≡sk = lshift¹ n
 
 -- greater
-bitView-Fin {suc n} i | .(suc (suc (k + k₁)))
-                      | k , 2ⁿ≡sk | greater .(suc k) k₁ = {!!}
+bitView-Fin {suc n} i | .(suc (suc (k + l))) | [ eq ] | k , 2ⁿ≡sk | greater .(suc k) l
+            rewrite sym $ +-suc k l | +-right-identity (pow₂ n) = {!!}
+  where
+  module _ {n k : ℕ} (l : ℕ) (2ⁿ=k : pow₂ n ≡ k)
+           (i : Fin (pow₂ n + pow₂ n)) (i'=k+l : Fin-toℕ i ≡ k + l) where
+    #1-#ˡₖ : BitView l n → BitView (k + l) (suc n)
+    #1-#ˡₖ bv rewrite +-comm k l | sym 2ⁿ=k = #1-#ˡ bv
 
+    l≤k : l ≤ k
+    l≤k with to-≤ i | i'=k+l
+    ... | i'≤k+k | i'=k+l = extract-+≤ (pow₂ n) 2ⁿ+l≤2ⁿ+k
+      where
+        i'=2ⁿ+l = subst (λ x → Fin-toℕ i ≡ x + l) (sym 2ⁿ=k) i'=k+l
+
+        i'≤2ⁿ+k : Fin-toℕ i ≤ pow₂ n + k
+        i'≤2ⁿ+k = subst (λ x → Fin-toℕ i ≤ pow₂ n + x) 2ⁿ=k i'≤k+k
+
+        2ⁿ+l≤2ⁿ+k : pow₂ n + l ≤ pow₂ n + k
+        2ⁿ+l≤2ⁿ+k = subst (λ x → x ≤ pow₂ n + k) i'=2ⁿ+l i'≤2ⁿ+k
+  
+
+
+--          rewrite sym $ +-suc k l | 2ⁿ≡sk with +≡-to-≤ (suc k) (suc l) (Fin-toℕ i) (sym eq)
+-- ...      | i'≤sk+sk with reduce≥ {suc k} i i'≤sk+sk | reduce≥-≡ {suc k} i i'≤sk+sk
+-- ...      | i'-2ⁿ | i'-2ⁿ-eq = {!!}
+--   where
+--     i-2ⁿ : Fin (suc k + 0)
+--     i-2ⁿ = reduce≥ {suc k} i (+≡-to-≤ (suc k) (suc l) (Fin-toℕ i) (sym eq))
+
+-- reduce≥ {suc k} {suc k + 0}
 -- prove that bitView computes the smallest bit length
 
 
