@@ -23,7 +23,11 @@ pow₂-1 : ℕ → ℕ
 pow₂-1 0 = 0
 pow₂-1 (suc n) = pow₂ n + pow₂-1 n
 
+
 pow₂≡sk : ∀ n → Σ[ k ∈ ℕ ] pow₂ n ≡ suc k
 pow₂≡sk zero = zero , refl
 pow₂≡sk (suc n) with pow₂≡sk n 
 ...   | k' , prf rewrite prf = k' + suc (k' + zero) , refl
+
+curry' : {A B C : Set} → (A → B → C) → (A × B) → C
+curry' f (a , b) = f a b

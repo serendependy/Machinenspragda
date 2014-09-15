@@ -155,7 +155,7 @@ bit-adder-correct (true ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ 
          2ⁿ + 2ⁿ + (2ⁿ + bₛ')        ∎
 bit-adder-correct (true ∷ b₁) (true ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , false | prf | bₛ' 
   rewrite +-right-identity 2ⁿ | +-right-identity (2ⁿ + 2ⁿ) = 
-   begin 2ⁿ + b₁' + (2ⁿ + b₂')       ≡⟨ reflection-lemma₁ 2ⁿ b₁' b₂' ⟩
+   begin 2ⁿ + b₁' + (2ⁿ + b₂')       ≡⟨ reflection-lemma₁ 2ⁿ b₁' b₂' ⟩ -- 
          2ⁿ + 2ⁿ + (b₁' + b₂')       ≡⟨ cong (_+_ (2ⁿ + 2ⁿ)) prf ⟩
          2ⁿ + 2ⁿ + bₛ'               ∎
 bit-adder-correct (true ∷ b₁) (false ∷ b₂) | b₁' | b₂' | 2ⁿ | bₛ , true | prf | bₛ'

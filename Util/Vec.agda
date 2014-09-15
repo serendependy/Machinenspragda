@@ -89,11 +89,9 @@ module Equality {α} (A : Set α) where
 
   lookup-cong : ∀ {n₁ n₂} {i₁ i₂} → {xs : Vec A n₁} → {ys : Vec A n₂} → 
                   i₁ ≈Fin i₂ → xs ≈ ys → lookup i₁ xs ≡ lookup i₂ ys
-  lookup-cong {i₁ = ()} eqFin []-cong
-  lookup-cong (0-cong x) (x¹≈x² ∷-cong eqVec) =
-    x¹≈x²
-  lookup-cong (+1-cong eqFin) (x¹≈x² ∷-cong eqVec) =
-    lookup-cong eqFin eqVec
+  lookup-cong {i₁ = ()} i₁≈i₂ []-cong
+  lookup-cong 0-cong (x¹≈x² ∷-cong xs≈ys) = x¹≈x²
+  lookup-cong (+1-cong i₁≈i₂) (x¹≈x² ∷-cong xs≈ys) = lookup-cong i₁≈i₂ xs≈ys
 
   ≈-subst : ∀ {m n} → (prf : m ≡ n) → (xs : Vec A m) → xs ≈ subst (Vec A) prf xs
   ≈-subst _≡_.refl xs = ≈-refl xs

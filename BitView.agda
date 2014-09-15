@@ -1,7 +1,7 @@
 open import Data.Nat
 open import Data.Fin
   renaming (toℕ to Fin-toℕ ; compare to Fin-compare)
-  hiding (_+_ ; _≤_)
+  hiding (_+_ ; _≤_ ; _<_)
 open import Data.Product
 open import Data.Bool
 
@@ -120,13 +120,15 @@ lshift¹ (suc l) rewrite sym $ lem₁ $ pow₂ l = lshift¹ l #0
 
 open import Util.Fin
 open Properties
+open import Data.Fin.Properties
+
 bitView-Fin : ∀ {n} → (i : Fin (pow₂ n)) → BitView (Fin-toℕ i) (1 ⊔ n)
 bitView-Fin {zero} zero = ₂#0
 bitView-Fin {zero} (suc ())
 bitView-Fin {suc n} i with Fin-toℕ i | inspect Fin-toℕ i | pow₂≡sk n
 ...       | i' | i'-insp | k , 2ⁿ≡sk with compare i' (suc k)
 
---less
+-- less
 bitView-Fin {suc n} i | i' | _ | .(i' + l) , 2ⁿ≡sk | less .i' l
          with from-l+m≡nₗ i' l (sym 2ⁿ≡sk) | from-l+m≡nₗ-toℕ i' l (sym 2ⁿ≡sk)
 ...           | i″ | i″-eq
@@ -144,25 +146,35 @@ bitView-Fin {suc n} i | .(suc k) | _ | k , 2ⁿ≡sk | equal .(suc k)
          rewrite sym 2ⁿ≡sk = lshift¹ n
 
 -- greater
-bitView-Fin {suc n} i | .(suc (suc (k + l))) | [ eq ] | k , 2ⁿ≡sk | greater .(suc k) l
-            rewrite sym $ +-suc k l | +-right-identity (pow₂ n) = {!!}
+bitView-Fin {suc n} i | .(suc (suc (k + l))) | [ eq ] | k , 2ⁿ=sk | greater .(suc k) l
+            rewrite sym $ +-suc k l | +-right-identity (pow₂ n) = #1-#ˡₖ bv'
   where
-  module _ {n k : ℕ} (l : ℕ) (2ⁿ=k : pow₂ n ≡ k)
+  module Helper {n k : ℕ} (l : ℕ) (2ⁿ=k : pow₂ n ≡ k)
            (i : Fin (pow₂ n + pow₂ n)) (i'=k+l : Fin-toℕ i ≡ k + l) where
-    #1-#ˡₖ : BitView l n → BitView (k + l) (suc n)
-    #1-#ˡₖ bv rewrite +-comm k l | sym 2ⁿ=k = #1-#ˡ bv
+--    #1-#ˡₖ bv rewrite +-comm k l | sym 2ⁿ=k = #1-#ˡ bv
 
-    l≤k : l ≤ k
-    l≤k with to-≤ i | i'=k+l
-    ... | i'≤k+k | i'=k+l = extract-+≤ (pow₂ n) 2ⁿ+l≤2ⁿ+k
-      where
-        i'=2ⁿ+l = subst (λ x → Fin-toℕ i ≡ x + l) (sym 2ⁿ=k) i'=k+l
+    l<2ⁿ : l < pow₂ n
+    l<2ⁿ with to-< i | subst (λ x → Fin-toℕ i ≡ x + l) (sym 2ⁿ=k) i'=k+l
+    ...  | i'<2ⁿ+2ⁿ | i'=2ⁿ+l with subst (λ x → x < pow₂ n + pow₂ n) i'=2ⁿ+l i'<2ⁿ+2ⁿ
+    ...  | 2ⁿ+l<2ⁿ+2ⁿ = extract-+< (pow₂ n) 2ⁿ+l<2ⁿ+2ⁿ
 
-        i'≤2ⁿ+k : Fin-toℕ i ≤ pow₂ n + k
-        i'≤2ⁿ+k = subst (λ x → Fin-toℕ i ≤ pow₂ n + x) 2ⁿ=k i'≤k+k
+    lᶠ : Fin (pow₂ n)
+    lᶠ = fromℕ≤ l<2ⁿ
 
-        2ⁿ+l≤2ⁿ+k : pow₂ n + l ≤ pow₂ n + k
-        2ⁿ+l≤2ⁿ+k = subst (λ x → x ≤ pow₂ n + k) i'=2ⁿ+l i'≤2ⁿ+k
+    lᶠ=l : Fin-toℕ lᶠ ≡ l
+    lᶠ=l = toℕ-fromℕ≤ l<2ⁿ
+
+    bv' : BitView l (1 ⊔ n)
+    bv' with bitView-Fin {n} lᶠ
+    ... | bv'' rewrite lᶠ=l = bv''
+
+    #1-#ˡₖ : BitView l (1 ⊔ n) → BitView (k + l) (suc n)
+    #1-#ˡₖ bv with sym 2ⁿ=k | l | l<2ⁿ
+    ...  | k=2ⁿ | l' | l<2ⁿ with n 
+    #1-#ˡₖ bv | k=2ⁿ | .0 | s≤s z≤n | zero rewrite k=2ⁿ = subst (λ x → BitView x 1) (+-right-identity 1) ₂#1
+    #1-#ˡₖ bv | k=2ⁿ | l' | l<2ⁿ | suc nw rewrite +-comm k l' | k=2ⁿ = #1-#ˡ bv
+
+  open Helper {n} (suc l) 2ⁿ=sk i eq
   
 
 
@@ -175,15 +187,3 @@ bitView-Fin {suc n} i | .(suc (suc (k + l))) | [ eq ] | k , 2ⁿ≡sk | greater 
 
 -- reduce≥ {suc k} {suc k + 0}
 -- prove that bitView computes the smallest bit length
-
-
--- some more fancy conversions
-open import Data.Nat.Properties.Simple
---open import Util.Fin
-
--- BitView-toFin : ∀ {val #bits} → BitView val #bits → Fin (pow₂ #bits)
--- BitView-toFin ₂#0 = zero
--- BitView-toFin ₂#1 = suc zero
--- BitView-toFin (_#0 {l = l} bv) with BitView-toFin bv 
--- ...         | ret = 2 *ℕF ret
--- BitView-toFin (bv #1) = {!!}

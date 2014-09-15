@@ -54,11 +54,11 @@ module Conversions where
   Bits-toFin (_∷_ {n} false bits) rewrite +-right-identity (pow₂ n) =
              inject+ (pow₂ n) (Bits-toFin bits)
 
-  Bits-fromFin : ∀ {n} → Fin (pow₂ n) → Bits n
-  Bits-fromFin {n} i with Fin-toℕ i
-  ... | i' with parity i'
-  Bits-fromFin i | .(n * 2) | even n = {!!}
-  Bits-fromFin i | .(suc (n * 2)) | odd n = {!!}
+  -- Bits-fromFin : ∀ {n} → Fin (pow₂ n) → Bits n
+  -- Bits-fromFin {n} i with Fin-toℕ i
+  -- ... | i' with parity i'
+  -- Bits-fromFin i | .(n * 2) | even n = {!!}
+  -- Bits-fromFin i | .(suc (n * 2)) | odd n = {!!}
 
 -- with pow₂≡sk n 
   -- ...   | k , 2ⁿ=sk with (pow₂ n) | 2ⁿ=sk 

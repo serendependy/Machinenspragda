@@ -21,10 +21,10 @@ from-l+m≡nₗ : ∀ l r {n} → suc l + r ≡ n → Fin n
 from-l+m≡nₗ zero r refl = zero
 from-l+m≡nₗ (suc l) r refl = suc (from-l+m≡nₗ l r refl)
 
-to-≤ : ∀ {n} → (i : Fin n) → toℕ i ≤ n
-to-≤ {zero} ()
-to-≤ {suc n} zero = z≤n
-to-≤ {suc n} (suc i) = s≤s (to-≤ i)
+to-< : ∀ {n} → (i : Fin n) → toℕ i < n
+to-< {zero} ()
+to-< {suc n} zero = s≤s z≤n
+to-< {suc n} (suc i) = s≤s (to-< i)
 
 _+⊔_ : ∀ {n m} → Fin n → Fin m → Fin (n + m)
 _+⊔_ {.(suc n)} {m} (zero {n = n}) j
@@ -83,6 +83,10 @@ module Properties where
   extract-+≤ : ∀ m {n l} → m + n ≤ m + l → n ≤ l
   extract-+≤ zero m+n≤m+l = m+n≤m+l
   extract-+≤ (suc m) (s≤s m+n≤m+l) = extract-+≤ m m+n≤m+l
+
+  extract-+< : ∀ m {n l} → m + n < m + l → n < l
+  extract-+< zero m+n<m+l = m+n<m+l
+  extract-+< (suc m) (s≤s m+n<m+l) = extract-+< m m+n<m+l
 
 module HetEquality where
 
